@@ -1,5 +1,10 @@
 ### Hi there 👋
 
-I am a System Administrator and independent researcher
+Personal portfolio and experiments.
 
-💬 Let's talk about Powershell, Bash and Security
+BI Platform Engineer and independent researcher, working on secure analytics infrastructure, cloud-native BI platforms, and automation for enterprise data systems.
+
+---
+
+Interests  
+Cybersecurity · System reliability · AI-driven analytics · Motorcycle rides · Photography

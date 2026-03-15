@@ -1,0 +1,579 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terminal Portfolio</title>
+  <meta name="description" content="Interactive terminal portfolio interface.">
+  <style>
+    :root {
+      --bg: #050809;
+      --panel: rgba(9, 15, 18, 0.92);
+      --line: rgba(109, 247, 176, 0.2);
+      --line-strong: rgba(103, 217, 255, 0.35);
+      --text: #e8f4ef;
+      --muted: #9bb2a8;
+      --green: #6df7b0;
+      --cyan: #67d9ff;
+      --mono: "Consolas", "Menlo", "Liberation Mono", monospace;
+      --sans: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      --radius: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--text);
+      background:
+        radial-gradient(circle at 12% 10%, rgba(103, 217, 255, 0.1), transparent 35%),
+        radial-gradient(circle at 88% 20%, rgba(109, 247, 176, 0.1), transparent 30%),
+        linear-gradient(180deg, #020506 0%, #071014 55%, #030608 100%);
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 100% 4px;
+      opacity: 0.06;
+    }
+
+    .terminal {
+      width: min(920px, calc(100% - 1.5rem));
+      height: min(84vh, 760px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: 0 30px 90px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+    }
+
+    .terminal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.9rem 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .dots {
+      display: inline-flex;
+      gap: 0.42rem;
+    }
+
+    .dots span {
+      width: 0.68rem;
+      height: 0.68rem;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .dots span:nth-child(1) { background: #ff7b72; }
+    .dots span:nth-child(2) { background: #f2cc60; }
+    .dots span:nth-child(3) { background: #6df7b0; }
+
+    .terminal-output {
+      padding: 1rem;
+      min-height: 0;
+      overflow: auto;
+      font-family: var(--mono);
+      font-size: 0.92rem;
+      line-height: 1.65;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(103, 217, 255, 0.25) transparent;
+    }
+
+    .terminal-output::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .terminal-output::-webkit-scrollbar-thumb {
+      background: rgba(103, 217, 255, 0.25);
+      border-radius: 999px;
+    }
+
+    .quick-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      background: rgba(255, 255, 255, 0.02);
+      /* overflow-x: auto;
+      overflow-y: hidden;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(103, 217, 255, 0.2) transparent; */
+    }
+
+    /* .quick-nav::-webkit-scrollbar {
+      height: 7px;
+    }
+
+    .quick-nav::-webkit-scrollbar-thumb {
+      background: rgba(103, 217, 255, 0.2);
+      border-radius: 999px;
+    } */
+
+    .quick-btn {
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.02);
+      color: #d7ebe2;
+      padding: 0.32rem 0.72rem;
+      /* min-height: 2.1rem; */
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      /* line-height: 1.2; */
+      /* flex: 0 0 auto; */
+      /* white-space: nowrap; */
+      cursor: pointer;
+      transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+    }
+
+    .quick-btn:hover,
+    .quick-btn:focus-visible {
+      border-color: var(--line-strong);
+      background: rgba(103, 217, 255, 0.08);
+      transform: translateY(-1px);
+      outline: none;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.5rem;
+      align-items: start;
+    }
+
+    .row + .row {
+      margin-top: 0.32rem;
+    }
+
+    .row.output {
+      display: block;
+      color: #b0c6bd;
+      white-space: pre-wrap;
+    }
+
+    .row.output.banner {
+      white-space: pre;
+      overflow-x: auto;
+      overflow-y: hidden;
+      line-height: 1.35;
+      padding-bottom: 0.25rem;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(103, 217, 255, 0.25) transparent;
+    }
+
+    .row.output.banner::-webkit-scrollbar {
+      height: 8px;
+    }
+
+    .row.output.banner::-webkit-scrollbar-thumb {
+      background: rgba(103, 217, 255, 0.25);
+      border-radius: 999px;
+    }
+
+    .prompt {
+      color: var(--green);
+      white-space: nowrap;
+    }
+
+    .cmd {
+      color: #e5f6ee;
+      word-break: break-word;
+    }
+
+    .error {
+      color: #ffc2c2;
+    }
+
+    .terminal-form {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.6rem;
+      align-items: center;
+      border-top: 1px solid rgba(255, 255, 255, 0.07);
+      padding: 0.85rem 1rem;
+      background: rgba(0, 0, 0, 0.25);
+    }
+
+    .terminal-label {
+      color: var(--cyan);
+      font-family: var(--mono);
+      font-size: 0.84rem;
+      white-space: nowrap;
+    }
+
+    .terminal-input {
+      width: 100%;
+      border: 0;
+      background: transparent;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.95rem;
+      outline: none;
+      caret-color: var(--green);
+    }
+
+    .terminal-input::placeholder {
+      color: rgba(176, 198, 189, 0.68);
+    }
+
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      padding: 0;
+      border: 0;
+      clip: rect(0, 0, 0, 0);
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 700px) {
+      .terminal {
+        height: 88vh;
+      }
+
+      .quick-nav {
+        padding: 0.65rem 0.75rem;
+      }
+
+      .quick-btn {
+        min-height: 2rem;
+        font-size: 0.84rem;
+        padding: 0.4rem 0.78rem;
+      }
+
+      .terminal-output {
+        font-size: 0.82rem;
+      }
+
+      .row.output.banner {
+        font-size: 0.69rem;
+        line-height: 1.28;
+      }
+
+      .terminal-form {
+        grid-template-columns: 1fr;
+        gap: 0.3rem;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="terminal" aria-label="Interactive terminal">
+    <header class="terminal-header">
+      <div class="dots" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+      <span>visitor-shell://portfolio</span>
+    </header>
+
+    <nav class="quick-nav" aria-label="Quick command navigation">
+      <button class="quick-btn" type="button" data-command="./init.sh">./init.sh</button>
+      <button class="quick-btn" type="button" data-command="whoami">whoami</button>
+      <button class="quick-btn" type="button" data-command="about">about</button>
+      <button class="quick-btn" type="button" data-command="journey">journey</button>
+      <button class="quick-btn" type="button" data-command="skills">skills</button>
+      <button class="quick-btn" type="button" data-command="projects">projects</button>
+      <button class="quick-btn" type="button" data-command="contact">contact</button>
+    </nav>
+
+    <section class="terminal-output" id="terminal-output" role="log" aria-live="polite" aria-relevant="additions text"></section>
+
+    <form class="terminal-form" id="terminal-form" autocomplete="off">
+      <label class="visually-hidden" for="terminal-input">Enter terminal command</label>
+      <span class="terminal-label">visitor@portfolio:~$</span>
+      <input id="terminal-input" class="terminal-input" type="text" spellcheck="false" placeholder="Type help and press Enter">
+    </form>
+  </main>
+
+  <script>
+    (function () {
+      const output = document.getElementById("terminal-output");
+      const form = document.getElementById("terminal-form");
+      const input = document.getElementById("terminal-input");
+      const quickButtons = document.querySelectorAll(".quick-btn");
+      const history = [];
+      let historyIndex = -1;
+
+      function pushCommand(text) {
+        const row = document.createElement("div");
+        row.className = "row";
+
+        const prompt = document.createElement("span");
+        prompt.className = "prompt";
+        prompt.textContent = "visitor@portfolio:~$";
+
+        const cmd = document.createElement("span");
+        cmd.className = "cmd";
+        cmd.textContent = text;
+
+        row.appendChild(prompt);
+        row.appendChild(cmd);
+        output.appendChild(row);
+      }
+
+      function pushOutput(text, isError) {
+        const row = document.createElement("div");
+        row.className = "row output" + (isError ? " error" : "");
+        row.textContent = text;
+        output.appendChild(row);
+      }
+
+      function pushBanner(text) {
+        const row = document.createElement("div");
+        row.className = "row output banner";
+        row.textContent = text;
+        output.appendChild(row);
+      }
+
+      function pushLines(lines, isError) {
+        lines.forEach(function (line) {
+          pushOutput(line, isError);
+        });
+      }
+
+      function scrollToEnd() {
+        output.scrollTop = output.scrollHeight;
+      }
+
+      function run(commandLine) {
+        const command = commandLine.trim();
+        if (!command) {
+          return;
+        }
+
+        pushCommand(command);
+        history.push(command);
+        historyIndex = history.length;
+
+        const [name, ...args] = command.split(/\s+/);
+        const cmd = (name || "").toLowerCase();
+
+        switch (cmd) {
+          case "help":
+            pushLines([
+              "Commands:",
+              "  ./init.sh  -> boot and load profile banner",
+              "  portfolio  -> quick portfolio snapshot",
+              "  whoami     -> identity and role",
+              "  about      -> professional summary",
+              "  journey    -> career direction",
+              "  skills     -> technical focus areas",
+              "  projects   -> featured project themes",
+              "  contact    -> communication channels",
+              "  clear, date, echo <text>"
+            ]);
+            break;
+          case "./init.sh":
+          case "init.sh":
+            output.innerHTML = "";
+            pushBanner(
+              "################################################################################\n" +
+              "#                                                                              #\n" +
+              "#   ██╗   ██╗██╗██╗   ██╗███████╗██╗  ██╗                                      #\n" +
+              "#   ██║   ██║██║██║   ██║██╔════╝██║ ██╔╝                                      #\n" +
+              "#   ██║   ██║██║██║   ██║█████╗  █████╔╝                                       #\n" +
+              "#   ╚██╗ ██╔╝██║╚██╗ ██╔╝██╔══╝  ██╔═██╗                                       #\n" +
+              "#    ╚████╔╝ ██║ ╚████╔╝ ███████╗██║  ██╗                                      #\n" +
+              "#     ╚═══╝  ╚═╝  ╚═══╝  ╚══════╝╚═╝  ╚═╝                                      #\n" +
+              "#                                                                              #\n" +
+              "#              BI PLATFORM ENGINEERING | CLOUD | SECURITY | SRE                #\n" +
+              "#                                                                              #\n" +
+              "#        Bootstrapping reliable systems, observable platforms, and             #\n" +
+              "#        secure data foundations — one script, one pipeline, one               #\n" +
+              "#        hard-earned fix at a time.                                            #\n" +
+              "#                                                                              #\n" +
+              "#        Looker • Power BI • Tableau • SAP BO • GCP • AWS • IaC                #\n" +
+              "#                                                                              #\n" +
+              "#        \"Keep the show running. Keep the platform trustworthy.\"               #\n" +
+              "#                                                                              #\n" +
+              "################################################################################"
+            );
+            pushOutput("Profile loaded. Type help to explore commands.");
+            break;
+          case "portfolio":
+            pushLines([
+              "Name: Vivek Gupta (alias: 0xGupta)",
+              "BI Platform Engineer focused on building secure, cloud-native analytics platforms and ensuring enterprise BI environments remain reliable, scalable, and governed.",
+              "With ~7 years of experience across modern BI ecosystems, my work revolves around platform engineering, cloud infrastructure automation, and reliability engineering for data platforms. I design and operate analytics environments across Looker, Power BI, SAP BO, and Tableau while integrating modern cloud architecture on GCP and AWS.",
+              "I am particularly interested in the intersection of analytics infrastructure, automation, and emerging AI-driven data experiences, including conversational analytics and intelligent data interfaces",
+              "Run: about | journey | skills | projects | contact"
+            ]);
+            break;
+          case "whoami":
+            pushLines([
+              "Vivek Gupta",
+              "Engineer working on the infrastructure layer behind analytics systems.",
+              "I spend most of my time designing and operating the infrastructure that keeps enterprise BI systems reliable, secure, and scalable.",
+              "Outside of platform engineering, I'm deeply interested in:",
+              "- Cybersecurity and infrastructure security",
+              "- Understanding how complex systems",
+              "- AI-driven analytics and data interaction",
+              "Off the terminal:",
+              "- Long motorcycle rides and landscape photography.",
+              "Run: about | journey | skills | projects | contact"
+            ]);
+            break;
+          case "about":
+            pushLines([
+              "BI Platform Engineer with ~7 years of experience designing, securing, and operating enterprise analytics platforms. My background spans modern BI tools including Looker, Power BI, SAP BusinessObjects, and Tableau, with a strong focus on cloud-native architectures and infrastructure automation.",
+              "I have hands-on experience implementing secure platform deployments across cloud environments, building automation using Terraform, CloudFormation, and configuration management tools, and introducing reliability-driven operational practices for BI platforms.",
+              "My work often involves platform migrations, disaster recovery architecture, CI/CD enablement, and governance frameworks to ensure analytics platforms remain stable, secure, and scalable.",
+              "More recently, I have been exploring the use of AI-driven analytics interfaces, building conversational analytics solutions that allow users to interact with enterprise data using natural language."
+            ]);
+            break;
+          case "journey":
+            pushLines([
+              "My journey started with understanding how BI platforms work at the ground level — administration, access, gateways, upgrades, migrations, and the kind of operational work that keeps reporting systems running.",
+              "As that foundation became stronger, my work moved beyond maintenance into engineering the platform itself: making it more secure, more reliable, easier to deploy, and better aligned with enterprise needs.",
+              "From there, the path evolved into cloud-native analytics engineering, with a focus on automation, disaster recovery, governed deployments, private connectivity, and resilient platform design.",
+              "Lately, I have been exploring how AI can change the way users interact with data — not just by improving dashboards, but by making analytics more conversational and accessible.",
+              "The direction ahead is clear: building secure, intelligent, and reliable data platforms, while growing deeper into security-focused thinking around modern infrastructure."
+            ]);
+            break;
+          case "skills":
+            pushLines([
+              "BI Platforms Engineering",
+              "- Looker, Power BI, SAP BusinessObjects, Tableau, Looker Studio",
+              "Cloud Platforms",
+              "- Google Cloud Platform, AWS",
+              "Infrastructure & Automation",
+              "- Terraform, CloudFormation, Docker, Chef",
+              "Programming & Scripting",
+              "- Python, Bash, PowerShell",
+              "Platform Operations",
+              "- CI/CD for BI",
+              "- Identity and access management",
+              "- Disaster recovery architecture",
+              "- Platform migrations and upgrades",
+              "- Analytics platform observability",
+            ]);
+            break;
+          case "projects":
+            pushLines([
+              "Conversational Analytics Interface",
+              "- Built a chat-based interface enabling natural language interaction with analytics data models.",
+              "Infrastructure Automation for BI Platforms",
+              "- Implemented automated provisioning of analytics infrastructure using infrastructure-as-code.",
+              "BI Platform Telemetry Pipeline",
+              "- Developed telemetry ingestion pipelines to capture analytics platform usage and audit logs.",
+              "Agentic AI workflow for analytics exploration"
+            ]);
+            break;
+          case "contact":
+            pushLines([
+              "Contact Channels:",
+              "- GitHub: https://github.com/0xGupta/",
+              "- LinkedIn: https://www.linkedin.com/in/0xgupta/"
+            ]);
+            break;
+          case "date":
+            pushOutput(new Date().toLocaleString());
+            break;
+          case "echo":
+            pushOutput(args.join(" ") || "");
+            break;
+          case "clear":
+            output.innerHTML = "";
+            pushOutput("Terminal cleared.");
+            run("./init.sh");
+            break;
+          default:
+            pushOutput("Command not found: " + cmd + ". Type help.", true);
+            break;
+        }
+
+        scrollToEnd();
+      }
+
+      form.addEventListener("submit", function (event) {
+        event.preventDefault();
+        const value = input.value;
+        input.value = "";
+        run(value);
+      });
+
+      input.addEventListener("keydown", function (event) {
+        if (event.key === "ArrowUp") {
+          event.preventDefault();
+          if (!history.length) {
+            return;
+          }
+          historyIndex = Math.max(0, historyIndex - 1);
+          input.value = history[historyIndex] || "";
+        }
+
+        if (event.key === "ArrowDown") {
+          event.preventDefault();
+          if (!history.length) {
+            return;
+          }
+          historyIndex = Math.min(history.length, historyIndex + 1);
+          input.value = history[historyIndex] || "";
+        }
+
+        if (event.ctrlKey && event.key.toLowerCase() === "l") {
+          event.preventDefault();
+          run("clear");
+        }
+      });
+
+      document.querySelector(".terminal").addEventListener("click", function () {
+        input.focus();
+      });
+
+      quickButtons.forEach(function (button) {
+        button.addEventListener("click", function () {
+          const command = button.getAttribute("data-command");
+          if (!command) {
+            return;
+          }
+          run(command);
+          input.focus();
+        });
+      });
+
+      pushOutput("Interactive terminal ready.");
+      pushOutput("Run ./init.sh to load profile or type help for all commands.");
+      run("./init.sh");
+      input.focus();
+      scrollToEnd();
+    }());
+  </script>
+</body>
+</html>
