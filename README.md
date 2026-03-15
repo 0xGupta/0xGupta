@@ -6,5 +6,5 @@ BI Platform Engineer and independent researcher, working on secure analytics inf
 
 ---
 
-Interests  
+Interests
 Cybersecurity · System reliability · AI-driven analytics · Motorcycle rides · Photography
